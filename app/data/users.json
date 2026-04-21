@@ -1,0 +1,6 @@
+{
+  "alice": { "role": "engineer", "display_name": "Alice (Engineer)" },
+  "bob":   { "role": "hr",       "display_name": "Bob (HR)" },
+  "carol": { "role": "admin",    "display_name": "Carol (Admin)" },
+  "dan":   { "role": "intern",   "display_name": "Dan (Intern)" }
+}

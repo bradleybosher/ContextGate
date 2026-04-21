@@ -1,0 +1,44 @@
+[
+  {
+    "id": "pub-001",
+    "title": "Acme Robotics — Product Overview",
+    "sensitivity": "public",
+    "allowed_roles": ["*"],
+    "content": "Acme Robotics builds cloud-native warehouse automation. Our flagship product, PalletPilot, coordinates fleets of autonomous mobile robots in third-party logistics centers. Public press kit available at acme-robotics.example.com/press."
+  },
+  {
+    "id": "pub-002",
+    "title": "Acme Robotics — Careers Blurb",
+    "sensitivity": "public",
+    "allowed_roles": ["*"],
+    "content": "We are hiring across engineering, product, and operations. Visit acme-robotics.example.com/careers for open roles. We are fully remote with hubs in Austin and Berlin."
+  },
+  {
+    "id": "eng-001",
+    "title": "PalletPilot Incident Response Runbook",
+    "sensitivity": "internal",
+    "allowed_roles": ["engineer", "admin"],
+    "content": "On-call engineers should first check the fleet health dashboard at grafana.internal/d/fleet. Known issue: robots occasionally lose RTLS lock near dock doors; restart the edge agent before escalating. Do NOT restart the coordinator during active picks."
+  },
+  {
+    "id": "eng-002",
+    "title": "PalletPilot Staging Credentials (Infra Notes)",
+    "sensitivity": "internal",
+    "allowed_roles": ["engineer", "admin"],
+    "content": "Staging cluster uses a shared integration key for the telemetry sidecar. Rotate quarterly. Current value: sk-test-ABCD1234EFGH5678IJKLMNOP. Telemetry endpoint: https://telemetry.staging.acme.internal. Contact ops-staging@acme.example.com if rotation fails."
+  },
+  {
+    "id": "hr-001",
+    "title": "Engineering Compensation Bands — FY26",
+    "sensitivity": "confidential",
+    "allowed_roles": ["hr", "admin"],
+    "content": "FY26 compensation bands for the engineering org. IC3: 165000-195000. IC4: 195000-235000. IC5: 235000-290000. Staff (IC6): 290000-360000. Total compensation excludes equity refresh. Primary contact: jane.compensation@acme.example.com."
+  },
+  {
+    "id": "hr-002",
+    "title": "Termination Memo — Redacted Subject",
+    "sensitivity": "confidential",
+    "allowed_roles": ["hr", "admin"],
+    "content": "Employee termination effective 2026-03-14 for cause, citing repeated violation of data handling policy. Severance declined. Legal hold placed on employee email employee-7421@acme.example.com. Exit interview waived per HR direction."
+  }
+]

@@ -1,6 +1,20 @@
 # --- Claude Code local settings (machine-specific paths) ---
 .claude/settings.local.json
 
+# --- Python ---
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+
+# --- ContextGate runtime artifacts ---
+*.index
+audit.log
+.env
+
 # --- Global Ignored ---
 .git/
 .vscode/
