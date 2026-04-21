@@ -106,6 +106,34 @@ log schema, and the adversarial test matrix.
 
 ## Failure-mode demo
 
+### Interactive demo script
+
+The fastest way to see the contrast live is the included demo script. Start the
+server, then run it in a second terminal:
+
+```bash
+uvicorn app.main:app --reload   # terminal 1
+python demo.py                  # terminal 2
+```
+
+The script walks through five acts with color-coded output:
+
+| Act | What it shows |
+|-----|---------------|
+| 1 — Catalog | Documents in the system, their sensitivity tier, and who can see them |
+| 2 — Naive leaks | Jailbreak query as `dan` (intern) to `/ask_naive` — confidential markers appear in the response |
+| 3 — Protected blocks | Identical query to `/ask` — no markers in the response, `denied_ids` logged |
+| 4 — Audit contrast | Side-by-side audit log comparison showing the gate decisions |
+| 5 — Admin access | Same query as `carol` (admin) — compensation data appears legitimately |
+
+Override defaults with environment variables:
+
+```bash
+CONTEXTGATE_URL=http://localhost:8000 CONTEXTGATE_AUDIT_LOG=./audit.log python demo.py
+```
+
+### Manual curl demo
+
 Same adversarial query, same user (`dan`, an intern with no access to
 confidential docs), two endpoints:
 
