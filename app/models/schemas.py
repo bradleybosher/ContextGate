@@ -68,6 +68,8 @@ class AuditEntry(BaseModel):
     retrieved_ids: List[str]
     allowed_ids: List[str]
     denied_ids: List[str]
+    sensitivity_blocked_ids: List[str] = Field(default_factory=list)
+    sensitivity_mode: Literal["redact", "block"] = "redact"
     redactions: List[Redaction] = Field(default_factory=list)
     final_prompt_preview: str
     provider: str

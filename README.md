@@ -44,7 +44,7 @@ there is no content to coerce out of the model.
   LLMProvider.chat() ─────────────────────── app/core/llm_provider.py
         │
         ▼
-  audit log (JSONL) ──────────────────────── app/logging/audit.py
+  audit log (JSONL) ──────────────────────── app/audit/audit.py
         │
         ▼
       answer
@@ -140,3 +140,29 @@ pytest -q
 - Not an auth layer. `user_id` is trusted from the request body — demo
   simplification. Production deployments must resolve role from a verified
   session.
+
+## What I'd build next
+
+1. **Real embedder.** The hashing embedder sacrifices recall for simplicity.
+   Swap in a semantic model (SentenceTransformer, OpenAI embeddings) for
+   meaningful RAG quality. The gate doesn't care which embedder you use — that
+   choice only affects which documents get retrieved, not what gets filtered.
+
+2. **Per-field access control.** The current rule is per-document. Structured
+   records (HR data, financial rows) often need field-level redaction while
+   preserving surrounding context. Extend the sensitivity scan stage — not the
+   access predicate — to handle nested paths.
+
+3. **Real authentication.** Replace `user_id` from the request body with
+   JWT/OAuth tokens. The role-to-permission mapping is already correct; only
+   the identity-resolution step needs to be hardened.
+
+4. **LLM output scanning** (belt-and-suspenders). Add a post-generation pass
+   that scans the model's response for leaked markers before returning it to the
+   caller. This is defense-in-depth, not a replacement for retrieval-layer
+   control — but it catches model extrapolation from allowed context.
+
+5. **Streaming audit backend.** File-based JSONL works at small scale. At
+   production volume, stream to Kafka, S3, or an observability platform
+   (Datadog, Honeycomb) so audit entries are queryable, retained, and
+   tamper-evident.

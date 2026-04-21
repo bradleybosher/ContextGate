@@ -26,17 +26,25 @@ Mode = Literal["redact", "block"]
 class _Detector:
     name: str
     pattern: re.Pattern[str]
+    key_group: int = 0  # if >0, m.group(key_group) is preserved; only the value is redacted
 
 
+# Illustrative patterns — not exhaustive DLP. For production, swap in a real
+# scanner or extend with domain-specific patterns via environment configuration.
 _DETECTORS: Tuple[_Detector, ...] = (
-    _Detector("openai_key", re.compile(r"sk-[A-Za-z0-9_\-]{16,}")),
-    _Detector("aws_access_key", re.compile(r"AKIA[0-9A-Z]{16}")),
-    _Detector("email", re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")),
+    _Detector("openai_key",        re.compile(r"sk-[A-Za-z0-9_\-]{16,}")),
+    _Detector("aws_access_key",    re.compile(r"AKIA[0-9A-Z]{16}")),
+    _Detector("github_token",      re.compile(r"ghp_[A-Za-z0-9]{36}")),
+    _Detector("bearer_token",      re.compile(r"(?i)bearer\s+[A-Za-z0-9_\-\.]{20,}")),
+    _Detector("private_key_header",re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")),
+    _Detector("email",             re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")),
     _Detector(
         "keyed_secret",
+        # Group 1: keyword+separator (preserved). Group 2: value (redacted).
         re.compile(
-            r"(?i)(?:password|api[_-]?key|secret|token)\s*[:=]\s*['\"]?([A-Za-z0-9_\-]{6,})['\"]?"
+            r"(?i)((?:password|api[_-]?key|secret|token)\s*[:=]\s*['\"]?)([A-Za-z0-9_\-]{6,})['\"]?"
         ),
+        key_group=1,
     ),
 )
 
@@ -46,9 +54,14 @@ def _scan_text(text: str) -> Tuple[str, List[Tuple[str, int]]]:
     cleaned = text
     counts: dict[str, int] = {}
     for det in _DETECTORS:
-        def _sub(m: re.Match[str], _name: str = det.name) -> str:
+        def _sub(
+            m: re.Match[str],
+            _name: str = det.name,
+            _key_group: int = det.key_group,
+        ) -> str:
             counts[_name] = counts.get(_name, 0) + 1
-            return f"[REDACTED:{_name}]"
+            prefix = m.group(_key_group) if _key_group else ""
+            return f"{prefix}[REDACTED:{_name}]"
 
         cleaned = det.pattern.sub(_sub, cleaned)
     return cleaned, list(counts.items())

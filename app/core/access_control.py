@@ -20,6 +20,7 @@ from app.models.schemas import RetrievalHit, Sensitivity
 
 
 def is_allowed(doc_sensitivity: Sensitivity, allowed_roles: List[str], role: str) -> bool:
+    # PUBLIC docs have no role restriction by definition; skip role checking entirely.
     if doc_sensitivity == Sensitivity.PUBLIC:
         return True
     if "*" in allowed_roles:

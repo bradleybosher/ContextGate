@@ -28,6 +28,12 @@ class FaissStore:
             self._docs[start + offset] = doc
 
     def search(self, query: str, top_k: int) -> List[RetrievalHit]:
+        """Return top-k hits without any filtering.
+
+        Intentionally permissive — access control and sensitivity scanning run
+        downstream. Keeping retrieval separate lets the audit log record exactly
+        what each stage accepted or dropped.
+        """
         if self.index.ntotal == 0:
             return []
         qv = self.embedder.embed(query).reshape(1, -1)
