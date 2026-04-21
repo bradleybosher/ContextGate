@@ -1,0 +1,37 @@
+# --- Backend Junk ---
+backend/.venv/
+backend/.pytest_cache/
+backend/**/__pycache__/
+backend/*.db-journal
+backend/*.tmp
+
+# --- Data Privacy ---
+# Prevents Claude from reading your actual wine database
+# every time you ask for a code change.
+backend/*.db
+backend/data/
+backend/profile_data.json
+
+# --- Frontend Junk ---
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.eslintcache
+
+# --- Global Ignored ---
+.git/
+.vscode/
+.DS_Store
+*.log
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+*.bat
+testdata/*
+# --- Media ---
+frontend/public/assets/
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.ico
