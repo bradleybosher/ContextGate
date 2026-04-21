@@ -34,9 +34,12 @@ class _Detector:
 _DETECTORS: Tuple[_Detector, ...] = (
     _Detector("openai_key",        re.compile(r"sk-[A-Za-z0-9_\-]{16,}")),
     _Detector("aws_access_key",    re.compile(r"AKIA[0-9A-Z]{16}")),
-    _Detector("github_token",      re.compile(r"ghp_[A-Za-z0-9]{36}")),
+    _Detector("github_token",      re.compile(r"gh[ps]_[A-Za-z0-9]{36,}")),
     _Detector("bearer_token",      re.compile(r"(?i)bearer\s+[A-Za-z0-9_\-\.]{20,}")),
     _Detector("private_key_header",re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")),
+    _Detector("db_connection_string", re.compile(
+        r"(?:postgresql|mysql|mongodb|redis|amqp)://[^\s\"'<>]{6,}"
+    )),
     _Detector("email",             re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")),
     _Detector(
         "keyed_secret",

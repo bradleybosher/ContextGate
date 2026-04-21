@@ -28,7 +28,7 @@ each sensitive decision happens *before* prompt construction.
   [6] LLM call               app/core/llm_provider.py           ← Mock or Anthropic
         │
         ▼
-  [7] audit log              app/logging/audit.py               ← JSONL, one entry / req
+  [7] audit log              app/audit/audit.py                 ← JSONL, one entry / req
         │
         ▼
      response
@@ -52,7 +52,7 @@ suite can contrast it with `/ask`. Do not build on top of it.
 | **Sensitivity filter (load-bearing)** | `app/core/sensitivity.py`         |
 | Prompt assembly               | `app/core/prompt_builder.py`              |
 | Provider abstraction          | `app/core/llm_provider.py`                |
-| Audit log                     | `app/logging/audit.py`                    |
+| Audit log                     | `app/audit/audit.py`                      |
 | Ingest / index build          | `scripts/ingest.py`                       |
 | Sample data                   | `app/data/sample_docs.json`, `users.json` |
 

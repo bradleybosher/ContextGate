@@ -40,11 +40,24 @@ def _format_context(docs: List[Document]) -> str:
         return "(no context available)"
     parts: List[str] = []
     for d in docs:
-        parts.append(f"[doc:{d.id} | {d.sensitivity.value}] {d.title}\n{d.content}")
+        # Sensitivity label intentionally omitted: telling the LLM a doc is
+        # "confidential" signals that restricted material existed, which is
+        # information an attacker could exploit even when the content is redacted.
+        parts.append(f"[doc:{d.id}] {d.title}\n{d.content}")
     return "\n\n---\n\n".join(parts)
 
 
 def build_protected_prompt(query: str, safe_docs: List[Document]) -> Tuple[str, str]:
+    """Assemble system + user messages for the protected pipeline.
+
+    ASSUMPTION: safe_docs have already passed filter_by_role() AND
+    scan_documents(). This function performs no re-validation — the pipeline
+    in routes.py owns that contract. Bypassing those stages before calling
+    this function voids the safety guarantee.
+
+    The system prompt is minimal and NOT relied upon for safety. Safety is
+    enforced upstream by the gate stages, not by prompt wording.
+    """
     context = _format_context(safe_docs)
     user = f"Context:\n{context}\n\nQuestion: {query}"
     return _PROTECTED_SYSTEM, user

@@ -87,18 +87,25 @@ def ask(req: AskRequest, request: Request) -> AskResponse:
     store = request.app.state.store
     provider = request.app.state.provider
     audit: AuditLogger = request.app.state.audit
+
+    # ── STAGE 1: RESOLVE ROLE ─────────────────────────────────────────────────
     role = _resolve_role(req.user_id)
 
-    # 1. retrieval
+    # ── STAGE 2: RETRIEVE (UNFILTERED — every doc the query matches) ──────────
+    # In a naive system these docs flow directly into the prompt. That is the bug.
     hits: List[RetrievalHit] = retrieve(store, req.query, _top_k(req))
     retrieved_ids = [h.doc.id for h in hits]
 
-    # 2. access control — drops restricted docs BEFORE sensitivity scanning and prompt construction
-    allowed_hits, denied_hits = access_control.filter_by_role(hits, role)
+    # ── STAGE 3: ACCESS CONTROL (enforcement boundary) ────────────────────────
+    # Docs that fail the role check are dropped here and never reach the LLM.
+    # denial_reasons records *why* each doc was withheld for audit triage.
+    allowed_hits, denied_hits, denial_reasons = access_control.filter_by_role(hits, role)
     allowed_ids = [h.doc.id for h in allowed_hits]
     denied_ids = [h.doc.id for h in denied_hits]
 
-    # 3. sensitivity scan — redact or drop secrets even in permitted docs
+    # ── STAGE 4: SENSITIVITY SCAN (redact secrets in permitted docs) ──────────
+    # Even role-permitted docs may contain stale credentials or PII. Redact or
+    # drop them before prompt construction — the LLM must not see raw secrets.
     mode = _sensitivity_mode()
     safe_docs: List[Document]
     redactions: List[Redaction]
@@ -106,12 +113,14 @@ def ask(req: AskRequest, request: Request) -> AskResponse:
         [h.doc for h in allowed_hits], mode=mode  # type: ignore[arg-type]
     )
 
-    # docs allowed by AC but dropped by sensitivity (visible in audit, not in prompt)
+    # Docs allowed by access control but dropped by sensitivity (in audit, not in prompt)
     safe_doc_ids = {d.id for d in safe_docs}
     sensitivity_blocked_ids = [i for i in allowed_ids if i not in safe_doc_ids]
 
-    # 4. prompt assembly — sees only safe_docs
+    # ── STAGE 5: PROMPT CONSTRUCTION (LLM sees only safe_docs) ───────────────
     system, user = prompt_builder.build_protected_prompt(req.query, safe_docs)
+
+    # ── STAGE 6: LLM CALL ─────────────────────────────────────────────────────
     answer = provider.chat(system, user)
 
     audit.log(
@@ -124,6 +133,7 @@ def ask(req: AskRequest, request: Request) -> AskResponse:
             retrieved_ids=retrieved_ids,
             allowed_ids=allowed_ids,
             denied_ids=denied_ids,
+            denial_reasons=denial_reasons,
             sensitivity_blocked_ids=sensitivity_blocked_ids,
             sensitivity_mode=mode,
             redactions=redactions,
@@ -154,15 +164,26 @@ def ask_naive(req: AskRequest, request: Request) -> AskResponse:
     store = request.app.state.store
     provider = request.app.state.provider
     audit: AuditLogger = request.app.state.audit
+
+    # ── STAGE 1: RESOLVE ROLE ─────────────────────────────────────────────────
     role = _resolve_role(req.user_id)
 
+    # ── STAGE 2: RETRIEVE (UNFILTERED) ────────────────────────────────────────
     hits = retrieve(store, req.query, _top_k(req))
     retrieved_ids = [h.doc.id for h in hits]
     all_docs = [h.doc for h in hits]
 
+    # ── NO ACCESS CONTROL ─────────────────────────────────────────────────────
+    # ── NO SENSITIVITY SCAN ───────────────────────────────────────────────────
+
+    # ── STAGE 3: PROMPT (raw, unfiltered docs go directly to the LLM) ─────────
     system, user = prompt_builder.build_naive_prompt(req.query, all_docs)
+
+    # ── STAGE 4: LLM CALL ─────────────────────────────────────────────────────
     answer = provider.chat(system, user)
 
+    # Audit is honest: all retrieved docs are in denied_ids because no gate ran.
+    # allowed_ids is empty — no access-control check means no authorised set.
     audit.log(
         AuditEntry(
             ts=now_iso(),
@@ -171,8 +192,9 @@ def ask_naive(req: AskRequest, request: Request) -> AskResponse:
             role=role,
             query=req.query,
             retrieved_ids=retrieved_ids,
-            allowed_ids=retrieved_ids,
-            denied_ids=[],
+            allowed_ids=[],
+            denied_ids=retrieved_ids,
+            denial_reasons={},
             sensitivity_blocked_ids=[],
             sensitivity_mode="redact",
             redactions=[],
@@ -186,7 +208,7 @@ def ask_naive(req: AskRequest, request: Request) -> AskResponse:
         answer=answer,
         pipeline="naive",
         retrieved_ids=retrieved_ids,
-        allowed_ids=retrieved_ids,
+        allowed_ids=retrieved_ids,   # response field kept for API compat (all docs were surfaced)
         denied_ids=[],
         redactions=[],
     )

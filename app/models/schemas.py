@@ -68,6 +68,10 @@ class AuditEntry(BaseModel):
     retrieved_ids: List[str]
     allowed_ids: List[str]
     denied_ids: List[str]
+    # Maps doc_id → reason string for each denied document, e.g.
+    # {"hr-001": "role 'intern' not in allowed_roles ['hr', 'admin']"}
+    # Empty for the naive pipeline, which performs no access control.
+    denial_reasons: dict[str, str] = Field(default_factory=dict)
     sensitivity_blocked_ids: List[str] = Field(default_factory=list)
     sensitivity_mode: Literal["redact", "block"] = "redact"
     redactions: List[Redaction] = Field(default_factory=list)

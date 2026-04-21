@@ -54,6 +54,15 @@ def test_clean_text_is_unchanged():
     assert reds == []
 
 
+def test_db_connection_string_is_redacted():
+    d = _doc("connect via postgresql://admin:s3cr3t@db.internal:5432/prod done")
+    out, reds = scan_document(d, mode="redact")
+    assert out is not None
+    assert "postgresql://admin:s3cr3t" not in out.content
+    assert "[REDACTED:db_connection_string]" in out.content
+    assert any(r.type == "db_connection_string" for r in reds)
+
+
 def test_scan_documents_preserves_clean_drops_blocked():
     clean = _doc("safe content")
     dirty = _doc("api_key=supersecretvalue123")

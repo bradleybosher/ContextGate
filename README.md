@@ -1,5 +1,8 @@
 # ContextGate
 
+> **Prompt-level controls are insufficient under adversarial input.
+> Control must be enforced at the retrieval boundary.**
+
 A FastAPI service demonstrating that **sensitive-data leakage in LLM applications
 is a retrieval-layer problem, not a prompt-layer problem.** Access control and
 sensitivity redaction run *upstream* of the prompt — the model never sees what
@@ -19,6 +22,49 @@ to a probabilistic model, not a boundary. Under adversarial input it breaks:
 System-level enforcement sidesteps the problem: if a restricted document is
 never retrieved, never inserted into the prompt, and never shown to the LLM,
 there is no content to coerce out of the model.
+
+## Architecture comparison
+
+```
+Naive pipeline (vulnerable)
+──────────────────────────
+User query
+    │
+    ▼
+Retriever  ←─ fetches ALL matching docs, including restricted ones
+    │
+    ▼
+ LLM  ←─ sees confidential content; prompt instruction is the only "guard"
+    │
+    ▼
+Response  ←─ leaks under adversarial input ("ignore previous instructions…")
+
+
+ContextGate pipeline (safe)
+───────────────────────────
+User query
+    │
+    ▼
+[1] Resolve role  ←─ user identity → role
+    │
+    ▼
+[2] Retriever (UNFILTERED)  ←─ over-retrieves intentionally; all candidates visible to audit
+    │  raw hits
+    ▼
+[3] Access Control Gate  ←─ drops docs the role cannot see; records denials
+    │  role-permitted hits only
+    ▼
+[4] Sensitivity Scan  ←─ redacts or drops secrets even in permitted docs
+    │  clean docs only
+    ▼
+[5] Prompt Builder  ←─ LLM sees only safe_docs; prompt wording is not a safety mechanism
+    │
+    ▼
+ LLM  ←─ has no confidential content to leak, regardless of query wording
+    │
+    ▼
+Response + Audit log  ←─ every stage decision is recorded
+```
 
 ## Architecture
 

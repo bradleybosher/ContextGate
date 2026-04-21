@@ -39,11 +39,13 @@ def test_filter_partitions_allowed_and_denied():
         _hit("eng", Sensitivity.INTERNAL, ["engineer"]),
         _hit("hr", Sensitivity.CONFIDENTIAL, ["hr"]),
     ]
-    allowed, denied = filter_by_role(hits, "engineer")
+    allowed, denied, denial_reasons = filter_by_role(hits, "engineer")
     allowed_ids = {h.doc.id for h in allowed}
     denied_ids = {h.doc.id for h in denied}
     assert allowed_ids == {"pub", "eng"}
     assert denied_ids == {"hr"}
+    assert "hr" in denial_reasons
+    assert "engineer" in denial_reasons["hr"]
 
 
 # --- HTTP-level end-to-end ---------------------------------------------------
